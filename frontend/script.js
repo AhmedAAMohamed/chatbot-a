@@ -4,7 +4,7 @@ const chatInput = document.getElementById('chatInput');
 const sendBtn = document.getElementById('sendBtn');
 
 // API Configuration - use relative URL for deployment
-const API_URL = '/api';  // Changed from http://localhost:8000
+const API_URL = '';  // Changed from '/api' to empty string
 
 // Track conversation history
 let messageHistory = [];
@@ -20,7 +20,7 @@ async function callChatAPI(userMessage) {
     
     console.log("Sending request to API:", messageHistory);
     
-    const response = await fetch(`${API_URL}/chat`, {
+    const response = await fetch(`${API_URL}/api/chat`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
