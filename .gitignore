@@ -25,3 +25,4 @@ Thumbs.db
 
 New-Item -Path .gitignore -ItemType File -Value $gitignoreContent
 chatbot-a/
+.vercel
