@@ -31,7 +31,18 @@ async function callChatAPI(userMessage) {
       })
     });
     
-    const data = await response.json();
+    // Debug: Log the raw response
+    const responseText = await response.text();
+    console.log("Raw API Response:", responseText);
+    
+    // Try to parse JSON
+    let data;
+    try {
+      data = JSON.parse(responseText);
+    } catch (error) {
+      console.error("JSON parsing error:", error);
+      return `Server returned invalid JSON. Raw response: ${responseText.substring(0, 100)}...`;
+    }
     
     if (!response.ok) {
       console.error("API Error Response:", data);

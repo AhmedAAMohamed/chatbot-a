@@ -6,13 +6,22 @@ from openai import OpenAI
 import os
 from dotenv import load_dotenv
 from datetime import datetime
+import sys
+
+# Configure logging
+print("Starting backend application...")
+print(f"Python version: {sys.version}")
 
 # Load environment variables
 load_dotenv()
 
 # Configuration
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4")
+OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-3.5-turbo")  # Changed to more widely available model
+
+# Print debug info (without exposing the full API key)
+print(f"OpenAI API Key configured: {'Yes' if OPENAI_API_KEY else 'No'}")
+print(f"OpenAI Model: {OPENAI_MODEL}")
 
 # Initialize OpenAI client
 client = OpenAI(api_key=OPENAI_API_KEY)
@@ -43,11 +52,19 @@ class ChatResponse(BaseModel):
     role: str = Field("assistant", description="Role of the message sender")
     created_at: datetime = Field(default_factory=datetime.now)
 
+# Root endpoint for basic testing
+@app.get("/", status_code=200)
+async def root():
+    return {"status": "API is running", "version": app.version}
+
 # Chat endpoint - removed authentication requirement
 @app.post("/api/chat", response_model=ChatResponse)
 async def chat(request: ChatRequest):
     try:
+        print(f"Received chat request with {len(request.messages)} messages")
+        
         if not OPENAI_API_KEY:
+            print("ERROR: OpenAI API key not configured")
             raise HTTPException(
                 status_code=500, 
                 detail="OpenAI API key not configured. Please set the OPENAI_API_KEY environment variable."
@@ -63,16 +80,21 @@ async def chat(request: ChatRequest):
             })
         
         model = request.model or OPENAI_MODEL
+        print(f"Using model: {model}")
         
         try:
+            print("Calling OpenAI API...")
             completion = client.chat.completions.create(
                 model=model,
                 messages=messages,
                 temperature=request.temperature
             )
             
+            response_content = completion.choices[0].message.content
+            print(f"Received response from OpenAI ({len(response_content)} chars)")
+            
             return {
-                "message": completion.choices[0].message.content,
+                "message": response_content,
                 "role": "assistant",
                 "created_at": datetime.now()
             }
@@ -87,7 +109,15 @@ async def chat(request: ChatRequest):
 # Health check endpoint
 @app.get("/health", status_code=200)
 async def health_check():
-    return {"status": "healthy", "version": app.version}
+    return {
+        "status": "healthy", 
+        "version": app.version, 
+        "openai_api_configured": bool(OPENAI_API_KEY),
+        "model": OPENAI_MODEL
+    }
+
+# Export app for Vercel
+app = app
 
 if __name__ == "__main__":
     import uvicorn
